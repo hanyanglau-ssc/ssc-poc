@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SecurityScorecard — Evaluation Request</title>
+<style>
+  :root {
+    --navy:    #061325;
+    --navy-2:  #0C2247;
+    --blue:    #1756E8;
+    --blue-h:  #1246CC;
+    --blue-bg: #EEF3FE;
+    --teal:    #00C2CB;
+    --bg:      #F3F5FB;
+    --white:   #FFFFFF;
+    --border:  #D6DCF0;
+    --text:    #12213D;
+    --muted:   #6B7A99;
+    --red:     #C8001A;
+    --red-bg:  #FFF0F2;
+    --green:   #057A45;
+    --green-bg:#E5F4EC;
+    --orange:  #C96500;
+    --r: 8px;
+    --sh: 0 2px 12px rgba(6,19,37,.07);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+  /* ── Header ── */
+  .hdr{background:var(--navy);padding:20px 40px;display:flex;align-items:center;gap:12px}
+  .wordmark{color:#fff;font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px}
+  .hdr-div{width:1px;height:26px;background:rgba(255,255,255,.18);margin:0 10px}
+  .hdr-sub{color:rgba(255,255,255,.55);font-size:13px}
+
+  /* ── Hero ── */
+  .hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 60%,#1B3D8A 100%);padding:44px 40px 40px;text-align:center}
+  .hero h1{color:#fff;font-size:26px;font-weight:700;letter-spacing:-.3px;margin-bottom:10px}
+  .hero p{color:rgba(255,255,255,.65);font-size:14px;max-width:520px;margin:0 auto;line-height:1.65}
+
+  /* ── Progress ── */
+  .prog-wrap{background:var(--white);border-bottom:1px solid var(--border)}
+  .prog-steps{display:flex;max-width:700px;margin:0 auto}
+  .s-item{flex:1;padding:14px 4px;font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:3px solid transparent;text-align:center;cursor:default}
+  .s-item.active{color:var(--blue);border-bottom-color:var(--blue)}
+  .s-item.done{color:var(--green);border-bottom-color:var(--green)}
+  .s-num{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--border);color:var(--muted);align-items:center;justify-content:center;font-size:10px;margin-right:5px;font-weight:700}
+  .s-item.active .s-num{background:var(--blue);color:#fff}
+  .s-item.done .s-num{background:var(--green);color:#fff}
+
+  /* ── Form wrapper ── */
+  .fw{max-width:700px;margin:32px auto 60px;padding:0 18px}
+  .fp{display:none}.fp.active{display:block}
+
+  /* ── Card ── */
+  .card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:28px;margin-bottom:18px;box-shadow:var(--sh)}
+  .c-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:5px;display:flex;align-items:center;gap:8px}
+  .c-icon{width:26px;height:26px;border-radius:5px;background:var(--blue-bg);display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  .c-desc{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.55}
+
+  /* ── Fields ── */
+  .fg{margin-bottom:16px}.fg:last-child{margin-bottom:0}
+  .fr{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}.fr:last-child{margin-bottom:0}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px}
+  label .req{color:var(--red);margin-left:2px}
+  label .hint{font-weight:400;color:var(--muted);font-size:11.5px;margin-left:4px}
+  input[type=text],input[type=email],input[type=number],input[type=url],input[type=date],select,textarea{
+    width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13.5px;color:var(--text);background:#fff;transition:border-color .15s,box-shadow .15s;font-family:inherit;-webkit-appearance:none;appearance:none}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(23,86,232,.1)}
+  input.err,select.err,textarea.err{border-color:var(--red)!important}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+  textarea{resize:vertical;min-height:84px;line-height:1.55}
+  .char-c{font-size:11px;color:var(--muted);margin-top:3px;text-align:right}
+
+  /* ── Toggle ── */
+  .tog{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .tog input[type=radio]{display:none}
+  .tog label{flex:1;margin:0;padding:9px 6px;text-align:center;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;background:#fff;border-right:1px solid var(--border);transition:all .15s}
+  .tog label:last-of-type{border-right:none}
+  .tog input[type=radio]:checked+label{background:var(--blue);color:#fff;font-weight:600}
+
+  /* ── Checkbox grid ── */
+  .cbg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .cbi{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s}
+  .cbi:hover{border-color:var(--blue);background:#F7F9FF}
+  .cbi input[type=checkbox]{margin-top:1px;accent-color:var(--blue);flex-shrink:0;width:14px;height:14px;cursor:pointer}
+  .cbi span{font-size:13px;color:var(--text);line-height:1.4}
+
+  /* ── Reveal ── */
+  .reveal{display:none;margin-top:12px}.reveal.show{display:block}
+
+  /* ── Stakeholder block ── */
+  .sh-block{border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:10px;background:#FAFBFD}
+  .sh-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .sh-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  .btn-remove{background:none;border:none;font-size:12px;color:var(--red);cursor:pointer;font-weight:600;padding:2px 6px;border-radius:4px}
+  .btn-remove:hover{background:var(--red-bg)}
+
+  /* ── Add button ── */
+  .btn-add{display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px dashed var(--border);border-radius:6px;background:transparent;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;width:100%;justify-content:center;transition:all .15s;margin-top:10px}
+  .btn-add:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+
+  /* ── MNDA callout ── */
+  .mnda-notice{background:#FFFBEA;border:1px solid #F0D060;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#5A4200;margin-top:12px;line-height:1.5}
+
+  /* ── Buttons ── */
+  .btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:28px;gap:12px}
+  .btn{padding:11px 26px;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .18s;font-family:inherit}
+  .btn-primary{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(23,86,232,.22)}
+  .btn-primary:hover{background:var(--blue-h)}
+  .btn-ghost{background:transparent;color:var(--muted);padding-left:0}
+  .btn-ghost:hover{color:var(--text)}
+
+  /* ── Token success page ── */
+  #success-page{display:none}
+  .suc-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:40px 32px;text-align:center;box-shadow:var(--sh)}
+  .suc-icon{width:64px;height:64px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px}
+  .suc-card h2{font-size:22px;color:var(--navy);margin-bottom:10px}
+  .suc-card p{color:var(--muted);font-size:13.5px;line-height:1.6;max-width:460px;margin:0 auto 20px}
+  .token-box{background:var(--navy);border-radius:var(--r);padding:28px 24px;margin:24px 0}
+  .token-value{font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:var(--teal);letter-spacing:2px;word-break:break-all;margin-bottom:18px;line-height:1.5}
+  .btn-copy-lg{padding:10px 28px;background:var(--teal);color:var(--navy);border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
+  .btn-copy-lg:hover{opacity:.88}
+  .copy-confirm{font-size:12.5px;color:var(--teal);margin-top:10px;height:18px;opacity:0;transition:opacity .2s}
+  .copy-confirm.show{opacity:1}
+  .next-steps{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;text-align:left;margin-top:20px}
+  .next-steps-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px}
+  .next-step{display:flex;gap:10px;font-size:13px;color:var(--text);margin-bottom:8px;line-height:1.5}
+  .next-step:last-child{margin-bottom:0}
+  .ns-n{width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+  /* ── Callout ── */
+  .callout{background:var(--blue-bg);border-left:3px solid var(--blue);border-radius:4px;padding:10px 14px;font-size:13px;color:var(--navy);margin-bottom:16px;line-height:1.5}
+
+  /* ── Footer ── */
+  .ftr{background:var(--navy);padding:18px 40px;text-align:center;color:rgba(255,255,255,.35);font-size:11.5px}
+
+  @media(max-width:600px){
+    .hdr{padding:16px 18px}.hero{padding:30px 18px}.fw{padding:0 10px}
+    .card{padding:18px}.fr{grid-template-columns:1fr}.cbg{grid-template-columns:1fr}
+    .s-item{font-size:9.5px;padding:10px 2px}.s-num{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="wordmark">
+    <!-- Replace src with your hosted logo asset, e.g. /assets/ssc-logo-white.svg -->
+    <img src="https://securityscorecard.com/wp-content/themes/ssc/assets/images/ssc-logo-white.svg"
+         alt="SecurityScorecard" height="26"
+         onerror="this.replaceWith(document.createTextNode('SecurityScorecard'))" />
+  </div>
+  <div class="hdr-div"></div>
+  <span class="hdr-sub">Platform Evaluation Request</span>
+</header>
+
+<div class="hero">
+  <h1>Request a Platform Evaluation</h1>
+  <p>Tell us about your security risk management goals and we'll design an evaluation that fits your timeline and team.</p>
+</div>
+
+<div class="prog-wrap">
+  <div class="prog-steps">
+    <div class="s-item active" id="sn1"><span class="s-num">1</span>Goals</div>
+    <div class="s-item" id="sn2"><span class="s-num">2</span>Scope</div>
+    <div class="s-item" id="sn3"><span class="s-num">3</span>Your Team</div>
+    <div class="s-item" id="sn4"><span class="s-num">4</span>Environment</div>
+    <div class="s-item" id="sn5"><span class="s-num">5</span>Timeline</div>
+  </div>
+</div>
+
+<div class="fw">
+
+  <!-- Page 1: Goals -->
+  <div class="fp active" id="page-1">
+    <div class="card">
+      <div class="c-title"><span class="c-icon">🎯</span>Evaluation Goals</div>
+      <p class="c-desc">Help us understand what you are trying to achieve so we can tailor the evaluation accordingly.</p>
+
+      <div class="fg">
+        <label for="uc">What is the primary problem you are trying to solve? <span class="req">*</span></label>
+        <select id="uc" required onchange="showUcOther()">
+          <option value="">Select a use case…</option>
+          <optgroup label="Vendor Risk Management">
+            <option value="tprm">Managing risk from our direct vendors — scorecards, monitoring &amp; assessments</option>
+            <option value="supply_chain">Understanding our extended supply chain — 4th-party &amp; shadow vendor discovery</option>
+            <option value="questionnaire_response">Responding to security questionnaires sent to us by customers</option>
+          </optgroup>
+          <optgroup label="Cyber Intelligence">
+            <option value="internet_intel">Internet infrastructure &amp; attack surface intelligence (IP / domain scanning)</option>
+            <option value="cve_intel">CVE &amp; vulnerability intelligence — tracking exploitable vulnerabilities</option>
+          </optgroup>
+          <optgroup label="Compliance &amp; Business Use Cases">
+            <option value="cyber_insurance">Cyber Insurance Underwriting or Renewal</option>
+            <option value="ma">M&amp;A / Investment Due Diligence</option>
+            <option value="regulatory">Regulatory or Compliance Reporting</option>
+            <option value="board">Board-Level Risk Reporting</option>
+            <option value="self">Monitoring Our Own Organisation's Attack Surface</option>
+            <option value="other">Other</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="fg" id="uc_other_wrap" style="display:none">
+        <label>Describe your use case <span class="req">*</span></label>
+        <textarea id="uc_other" rows="2" placeholder="Briefly describe what you are trying to accomplish…"></textarea>
+      </div>
+
+      <div class="fg">
+        <label for="current_state">How do you currently manage this? <span class="hint">— optional, describe your existing process or tools</span></label>
+        <textarea id="current_state" rows="3" placeholder="e.g. We assess vendors using a spreadsheet questionnaire during onboarding. Critical suppliers are reviewed annually but we have no continuous monitoring or alerting in place…"></textarea>
+      </div>
+
+      <div class="fg">
+        <label for="sc">What does a successful evaluation look like for you? <span class="req">*</span><span class="hint">— describe the outcome, not the process</span></label>
+        <textarea id="sc" rows="4" placeholder="e.g. We can confirm that our top 50 vendors are rated and any critical findings are surfaced within 48 hours of onboarding…" oninput="updateCharCount(this,'sc-c',500)"></textarea>
+        <div class="char-c" id="sc-c">0 / 500</div>
+      </div>
+
+      <div class="fg">
+        <label for="driver">What is driving this evaluation? <span class="hint">— select the closest match</span></label>
+        <select id="driver">
+          <option value="">Not specified</option>
+          <option value="audit">External audit, regulation, or compliance requirement</option>
+          <option value="internal">Internal risk assessment or risk committee initiative</option>
+          <option value="partner">Business partner or customer requirement</option>
+          <option value="board">Board or executive mandate</option>
+          <option value="ma_deal">M&amp;A or investment due diligence</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="fg">
+        <label>How would you describe the urgency of this evaluation?</label>
+        <div class="tog">
+          <input type="radio" name="urgency" id="u1" value="immediate"><label for="u1">Immediate</label>
+          <input type="radio" name="urgency" id="u2" value="30d"><label for="u2">Within 30 days</label>
+          <input type="radio" name="urgency" id="u3" value="90d"><label for="u3">Within 90 days</label>
+          <input type="radio" name="urgency" id="u4" value="exploratory"><label for="u4">Exploratory</label>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row"><span></span><button class="btn btn-primary" onclick="next(1)">Continue →</button></div>
+  </div>
+
+  <!-- Page 2: Scope -->
+  <div class="fp" id="page-2">
+    <div class="card">
+      <div class="c-title"><span class="c-icon">🌐</span>Evaluation Scope</div>
+      <p class="c-desc">Specify which domains and assets should be included. This ensures the platform surfaces the most relevant data for your organisation.</p>
+
+      <div class="callout">Enter your primary internet domain and any secondary domains for your own organisation — subsidiaries, business units, or regional brands. Competitor domains for benchmarking are also welcome. Specific third-party vendors to assess should be added in the section below.</div>
+
+      <div class="fg">
+        <label for="domain">Primary domain <span class="req">*</span><span class="hint">— e.g. acme.com</span></label>
+        <input type="text" id="domain" placeholder="yourdomain.com" required />
+      </div>
+      <div class="fg">
+        <label for="extra_domains">Additional own-organisation domains <span class="hint">— one per line (subsidiaries, business units, regional brands, benchmarking)</span></label>
+        <textarea id="extra_domains" rows="3" placeholder="subsidiary.com.au&#10;regionalentity.com&#10;competitor.com"></textarea>
+      </div>
+
+      <div class="fg" style="margin-top:6px">
+        <label>Vendors to include in your evaluation <span class="hint">— optional</span></label>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:3px;margin-bottom:10px;line-height:1.5">List the third-party vendors you want assessed from day one. Your SecurityScorecard representative will configure these before your evaluation starts.</p>
+        <div id="preload-wrap"></div>
+        <button type="button" class="btn-add" onclick="addVendorRow()">+ Add Vendor</button>
+      </div>
+      <div class="fr">
+        <div>
+          <label for="vendors">Total vendors managed in your TPRM programme each year <span class="req">*</span></label>
+          <select id="vendors" required>
+            <option value="">Select a range…</option>
+            <option value="lt50">Fewer than 50</option>
+            <option value="50_200">50 – 200</option>
+            <option value="200_500">200 – 500</option>
+            <option value="500_2000">500 – 2,000</option>
+            <option value="gt2000">More than 2,000</option>
+            <option value="na">Not applicable — self-monitoring only</option>
+          </select>
+        </div>
+        <div>
+          <label for="critical_vendors">How many of these are classified as critical or high-risk?</label>
+          <select id="critical_vendors">
+            <option value="">Select a range…</option>
+            <option value="lt10">Fewer than 10</option>
+            <option value="10_50">10 – 50</option>
+            <option value="50_200">50 – 200</option>
+            <option value="gt200">More than 200</option>
+            <option value="not_tiered">Not yet tiered / unknown</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Which capabilities are most important to validate?</label>
+        <div class="cbg">
+          <label class="cbi"><input type="checkbox" name="cap" value="ratings"><span>Vendor security ratings and scorecards</span></label>
+          <label class="cbi"><input type="checkbox" name="cap" value="monitoring"><span>Continuous monitoring and real-time security event alerts</span></label>
+          <label class="cbi"><input type="checkbox" name="cap" value="questionnaires"><span>Third-party assessments, questionnaire workflow and automation</span></label>
+          <label class="cbi"><input type="checkbox" name="cap" value="avd"><span>4th-party and shadow vendor discovery (automated detection)</span></label>
+          <label class="cbi"><input type="checkbox" name="cap" value="reporting"><span>Executive reporting, audit trails and board-level dashboards</span></label>
+          <label class="cbi"><input type="checkbox" name="cap" value="api"><span>API and GRC platform integration (SIEM, SOAR, ServiceNow)</span></label>
+          <label class="cbi"><input type="checkbox" name="cap" value="internet_intel"><span>Internet infrastructure intelligence and CVE vulnerability exposure</span></label>
+          <label class="cbi"><input type="checkbox" name="cap" value="ai_insights"><span>AI-assisted risk prioritisation, breach event monitoring and triage</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="prev(2)">← Back</button>
+      <button class="btn btn-primary" onclick="next(2)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Page 3: Your Team -->
+  <div class="fp" id="page-3">
+    <div class="card">
+      <div class="c-title"><span class="c-icon">👥</span>Your Evaluation Team</div>
+      <p class="c-desc">Tell us who will be participating. All named individuals will be considered for platform access.</p>
+
+      <!-- Technical Evaluator -->
+      <div class="sh-block">
+        <div class="sh-head"><div class="sh-label">Technical Evaluator</div></div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px">The person conducting hands-on testing and assessing technical fit.</p>
+        <div class="fr">
+          <div>
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" id="te_name" placeholder="Jane Smith" required />
+          </div>
+          <div>
+            <label>Title / Role</label>
+            <input type="text" id="te_role" placeholder="e.g. Security Architect" />
+          </div>
+        </div>
+        <div class="fg">
+          <label>Work Email <span class="req">*</span></label>
+          <input type="email" id="te_email" placeholder="jane.smith@yourcompany.com" required />
+        </div>
+      </div>
+
+      <!-- Decision Maker -->
+      <div class="sh-block" style="margin-top:12px">
+        <div class="sh-head"><div class="sh-label">Decision Maker / Business Sponsor</div></div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px">The person who will approve or reject the vendor decision.</p>
+        <div class="tog" style="margin-bottom:12px">
+          <input type="radio" name="dm_same" id="dms_yes" value="yes" onchange="toggleDM()"><label for="dms_yes">Same as technical evaluator</label>
+          <input type="radio" name="dm_same" id="dms_no" value="no" onchange="toggleDM()" checked><label for="dms_no">Different person</label>
+        </div>
+        <div id="dm_fields">
+          <div class="fr">
+            <div><label>Full Name</label><input type="text" id="dm_name" placeholder="Alex Johnson" /></div>
+            <div><label>Title / Role</label><input type="text" id="dm_role" placeholder="e.g. CISO, VP Risk" /></div>
+          </div>
+          <div class="fg">
+            <label>Work Email</label>
+            <input type="email" id="dm_email" placeholder="alex.johnson@yourcompany.com" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Participants -->
+      <div style="margin-top:16px">
+        <label style="font-size:12.5px;font-weight:700;color:var(--text)">Additional Participants <span style="font-weight:400;color:var(--muted);font-size:12px">— optional</span></label>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:3px;margin-bottom:10px">Add any other team members who will need platform access during the evaluation.</p>
+        <div id="extra-participants"></div>
+        <button type="button" class="btn-add" onclick="addParticipant()">+ Add Another Participant</button>
+      </div>
+
+      <div style="height:16px"></div>
+
+      <!-- MNDA -->
+      <div class="fg">
+        <label>Is a Mutual Non-Disclosure Agreement (MNDA) required before platform access is granted? <span class="req">*</span></label>
+        <div class="tog">
+          <input type="radio" name="mnda" id="mnda_no" value="no" onchange="toggleMNDA()"><label for="mnda_no">Not required</label>
+          <input type="radio" name="mnda" id="mnda_yes" value="yes" onchange="toggleMNDA()"><label for="mnda_yes">Yes — required first</label>
+          <input type="radio" name="mnda" id="mnda_done" value="signed"><label for="mnda_done">Already in place</label>
+        </div>
+        <div class="reveal" id="mnda_contact_wrap">
+          <div class="mnda-notice">
+            ⚠ Platform access will not be provisioned until the MNDA is countersigned. Please provide the contact who should receive the MNDA.
+          </div>
+          <label>Name and email for MNDA recipient</label>
+          <input type="text" id="mnda_contact" placeholder="Legal Counsel name — counsel@yourcompany.com" />
+        </div>
+      </div>
+
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="prev(3)">← Back</button>
+      <button class="btn btn-primary" onclick="next(3)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Page 4: Environment -->
+  <div class="fp" id="page-4">
+    <div class="card">
+      <div class="c-title"><span class="c-icon">🔧</span>Current Environment</div>
+      <p class="c-desc">Understanding your existing toolset helps us demonstrate integration value and compare against your current approach.</p>
+
+      <div class="fg">
+        <label>Are you currently using a third-party risk or cyber risk ratings platform? <span class="req">*</span></label>
+        <div class="tog">
+          <input type="radio" name="incumbent" id="inc_yes" value="yes" onchange="toggleIncumbent()"><label for="inc_yes">Yes</label>
+          <input type="radio" name="incumbent" id="inc_no" value="no" onchange="toggleIncumbent()"><label for="inc_no">No</label>
+          <input type="radio" name="incumbent" id="inc_eval" value="evaluating"><label for="inc_eval">Currently evaluating options</label>
+        </div>
+        <div class="reveal" id="incumbent_reveal">
+          <label>Which platform(s) are you currently using?</label>
+          <input type="text" id="incumbent_name" placeholder="e.g. BitSight, RiskRecon, Panorays…" />
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Are you evaluating other vendors simultaneously?</label>
+        <div class="tog">
+          <input type="radio" name="comps" id="cp_yes" value="yes" onchange="toggleComps()"><label for="cp_yes">Yes</label>
+          <input type="radio" name="comps" id="cp_no" value="no" onchange="toggleComps()"><label for="cp_no">No</label>
+          <input type="radio" name="comps" id="cp_tbd" value="undecided"><label for="cp_tbd">Undecided</label>
+        </div>
+        <div class="reveal" id="comps_reveal">
+          <label>Which vendors are you also evaluating? <span class="hint">— optional</span></label>
+          <input type="text" id="comp_names" placeholder="e.g. BitSight, Panorays…" />
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Which GRC or risk management platforms does your team currently use? <span class="hint">— optional</span></label>
+        <div class="cbg">
+          <label class="cbi"><input type="checkbox" name="grc" value="servicenow"><span>ServiceNow</span></label>
+          <label class="cbi"><input type="checkbox" name="grc" value="archer"><span>Archer / RSA</span></label>
+          <label class="cbi"><input type="checkbox" name="grc" value="onetrust"><span>OneTrust</span></label>
+          <label class="cbi"><input type="checkbox" name="grc" value="splunk"><span>Splunk</span></label>
+          <label class="cbi"><input type="checkbox" name="grc" value="jira"><span>Jira / Atlassian</span></label>
+          <label class="cbi"><input type="checkbox" name="grc" value="other"><span>Other / custom</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="prev(4)">← Back</button>
+      <button class="btn btn-primary" onclick="next(4)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Page 5: Timeline -->
+  <div class="fp" id="page-5">
+    <div class="card">
+      <div class="c-title"><span class="c-icon">📅</span>Timeline &amp; Preferences</div>
+      <p class="c-desc">Knowing your schedule allows us to propose the right evaluation format and ensure your team can participate fully.</p>
+
+      <div class="fr">
+        <div>
+          <label for="start_date">Preferred evaluation start date</label>
+          <input type="date" id="start_date" />
+        </div>
+        <div>
+          <label for="deadline">Vendor decision deadline <span class="req">*</span></label>
+          <input type="date" id="deadline" required />
+        </div>
+      </div>
+
+      <div class="fg">
+        <label for="blackout">Dates when your team is unavailable <span class="hint">— optional</span></label>
+        <input type="text" id="blackout" placeholder="e.g. Unavailable 2–9 June (public holiday / internal freeze)" />
+      </div>
+
+      <div class="fg">
+        <label>Is there a formal RFP or procurement process in place?</label>
+        <div class="tog">
+          <input type="radio" name="rfp" id="rfp_y" value="yes"><label for="rfp_y">Yes — formal RFP</label>
+          <input type="radio" name="rfp" id="rfp_n" value="no"><label for="rfp_n">No</label>
+          <input type="radio" name="rfp" id="rfp_t" value="tbd"><label for="rfp_t">To be confirmed</label>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label for="notes">Anything else we should know before designing your evaluation? <span class="hint">— optional</span></label>
+        <textarea id="notes" rows="3" placeholder="Any regulatory constraints, internal approvals required, or specific scenarios you want tested…"></textarea>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="prev(5)">← Back</button>
+      <button class="btn btn-primary" onclick="submitForm()">Submit Request →</button>
+    </div>
+  </div>
+
+  <!-- Token success page -->
+  <div id="success-page">
+    <div class="suc-card">
+      <div class="suc-icon">✓</div>
+      <h2>Your Evaluation Code</h2>
+      <p>Copy the code below and send it to your SecurityScorecard representative. They will use it to set up your evaluation. Do not modify the code.</p>
+
+      <div class="token-box">
+        <div class="token-value" id="token-display">—</div>
+        <button class="btn-copy-lg" onclick="copyToken()">Copy Code</button>
+        <div class="copy-confirm" id="copy-confirm">Copied to clipboard</div>
+      </div>
+
+      <div class="next-steps" style="margin-bottom:0">
+        <div class="next-steps-title">Full Request Summary</div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;line-height:1.5">Copy this summary and send it to your SecurityScorecard representative — it includes your evaluation code plus all the context they need to get started.</p>
+        <textarea id="summary-text" readonly style="width:100%;font-family:'Courier New',Courier,monospace;font-size:11px;padding:12px;border:1px solid var(--border);border-radius:6px;background:#F8F9FC;color:var(--text);resize:vertical;min-height:180px;line-height:1.55;display:block"></textarea>
+        <button class="btn-copy-lg" style="margin-top:10px;background:var(--blue);color:#fff" onclick="copySummary()">Copy Full Request</button>
+        <div class="copy-confirm" id="summary-confirm">Copied to clipboard</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .fw -->
+
+<footer class="ftr">
+  &copy; 2026 SecurityScorecard Inc. &nbsp;·&nbsp; Information submitted is handled in accordance with our Privacy Policy.
+</footer>
+
+<script>
+  // ─────────────────────────────────────────────────────────────────
+  // TOKEN ENCODING
+  // Produces a fixed 32-character token (formatted as SSC-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX)
+  // All structured field choices are packed into a deterministic 32-position string,
+  // then scrambled with a fixed permutation + per-position rotation.
+  // The decoder (poc-decoder.html) uses the same constants to reverse the process.
+  // ─────────────────────────────────────────────────────────────────
+
+  const CS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'; // 36 chars, indices 0-35
+
+  // Fixed permutation of positions 0-31 (verified valid permutation)
+  const PERM = [7,14,2,25,0,18,31,11,4,22,16,28,9,3,19,26,1,12,23,6,30,17,8,24,15,29,5,20,27,13,21,10];
+
+  // Per-position rotation amounts (0-35)
+  const SHIFT = [5,11,3,17,7,13,2,19,8,1,14,6,20,4,16,9,22,0,12,18,3,15,7,11,24,6,10,21,5,17,13,8];
+
+  // Field value tables — must match poc-decoder.html exactly
+  const T = {
+    UC:  ['','tprm','cyber_insurance','ma','supply_chain','regulatory','board','self','other','questionnaire_response','internet_intel','cve_intel'],
+    URG: ['','immediate','30d','90d','exploratory'],
+    VEN: ['','lt50','50_200','200_500','500_2000','gt2000','na'],
+    DRV: ['','audit','internal','partner','board','ma_deal','other'],
+    MND: ['','no','yes','signed'],
+    DUR: ['','session','1week','2weeks','flexible'],
+    INC: ['','no','yes','evaluating'],
+    CMP: ['','no','yes','undecided'],
+    RFP: ['','yes','no','tbd'],
+    CAP: ['ratings','monitoring','questionnaires','avd','reporting','api','internet_intel','ai_insights'],
+    GRC: ['servicenow','archer','onetrust','splunk','jira','other'],
+  };
+
+  function toCS(val, table) {
+    const idx = table.indexOf(val);
+    return idx < 0 ? CS[0] : CS[idx];
+  }
+
+  function sanitize(str, len) {
+    // Keep only alphanumeric chars, uppercase, pad/trim to exactly `len` chars
+    const s = (str || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return s.substring(0, len).padEnd(len, '0');
+  }
+
+  function buildRaw(d) {
+    const raw = new Array(32).fill('0');
+
+    // [0]  Version marker
+    raw[0] = '1';
+
+    // [2–9]  Domain: first 8 alphanumeric chars
+    const domPart = sanitize(d.domain, 8);
+    for (let i = 0; i < 8; i++) raw[2 + i] = domPart[i];
+
+    // [10–13]  TE email local-part: first 4 alphanumeric chars
+    const emailLocal = sanitize((d.te_email || '').split('@')[0], 4);
+    for (let i = 0; i < 4; i++) raw[10 + i] = emailLocal[i];
+
+    // [14]  Use case
+    raw[14] = toCS(d.uc, T.UC);
+    // [15]  Urgency
+    raw[15] = toCS(d.urgency, T.URG);
+    // [16]  Vendor count
+    raw[16] = toCS(d.vendors, T.VEN);
+    // [17]  Compelling event / driver
+    raw[17] = toCS(d.driver, T.DRV);
+    // [18]  MNDA
+    raw[18] = toCS(d.mnda, T.MND);
+    // [19]  Duration preference
+    raw[19] = toCS(d.duration, T.DUR);
+    // [20]  Incumbent
+    raw[20] = toCS(d.incumbent, T.INC);
+    // [21]  Competitors
+    raw[21] = toCS(d.comps, T.CMP);
+    // [22]  RFP
+    raw[22] = toCS(d.rfp, T.RFP);
+
+    // [23–24]  Capabilities bitmap → 2 hex-like chars (using CS[0-15] for nibbles)
+    const selectedCaps = (d.caps || '').split(',');
+    let capBits = 0;
+    T.CAP.forEach((c, i) => { if (selectedCaps.includes(c)) capBits |= (1 << i); });
+    raw[23] = CS[(capBits >> 4) & 0xF];
+    raw[24] = CS[capBits & 0xF];
+
+    // [25]  GRC bitmap nibble
+    const selectedGRC = (d.grc || '').split(',');
+    let grcBits = 0;
+    T.GRC.forEach((g, i) => { if (selectedGRC.includes(g)) grcBits |= (1 << i); });
+    raw[25] = CS[grcBits & 0xF];
+
+    // [26–31]  Deadline: MMDDYY (6 digits), '000000' if not set
+    const dl = (d.deadline || '').replace(/-/g, '');  // YYYYMMDD
+    const mmddyy = dl.length === 8 ? dl.substring(4,8) + dl.substring(2,4) : '000000';
+    const dlClean = mmddyy.replace(/[^0-9]/g, '').padEnd(6, '0');
+    for (let i = 0; i < 6; i++) raw[26 + i] = dlClean[i];
+
+    // [1]  Checksum: sum of indices 2-31 mod 36
+    const sum = raw.slice(2).reduce((acc, c) => acc + CS.indexOf(c), 0);
+    raw[1] = CS[sum % 36];
+
+    return raw.join('');
+  }
+
+  function scramble(rawStr) {
+    // Step 1: apply positional permutation
+    const permuted = new Array(32);
+    for (let i = 0; i < 32; i++) permuted[i] = rawStr[PERM[i]];
+    // Step 2: rotate each character by SHIFT[i]
+    return permuted.map((c, i) => CS[(CS.indexOf(c) + SHIFT[i]) % 36]).join('');
+  }
+
+  function formatToken(t) {
+    return 'SSC-' + t.substring(0,8) + '-' + t.substring(8,16) + '-' + t.substring(16,24) + '-' + t.substring(24,32);
+  }
+
+  function generateToken(data) {
+    return formatToken(scramble(buildRaw(data)));
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // NAVIGATION
+  // ─────────────────────────────────────────────────────────────────
+  let cur = 1;
+  let pCount = 0;
+
+  function goTo(n) {
+    document.getElementById('page-' + cur).classList.remove('active');
+    document.getElementById('sn' + cur).classList.remove('active');
+    document.getElementById('sn' + cur).classList.add('done');
+    cur = n;
+    document.getElementById('page-' + cur).classList.add('active');
+    document.getElementById('sn' + cur).classList.remove('done');
+    document.getElementById('sn' + cur).classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function next(from) { if (validate(from)) goTo(from + 1); }
+  function prev(from) { goTo(from - 1); }
+
+  function validate(page) {
+    let ok = true;
+    document.querySelectorAll('#page-' + page + ' [required]').forEach(el => {
+      el.classList.remove('err');
+      if (!el.value.trim()) { el.classList.add('err'); if (ok) el.focus(); ok = false; }
+    });
+    if (page === 3) {
+      if (!document.querySelector('input[name="mnda"]:checked')) ok = false;
+    }
+    return ok;
+  }
+
+  function updateCharCount(el, cid, max) {
+    document.getElementById(cid).textContent = Math.min(el.value.length, max) + ' / ' + max;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // UI TOGGLES
+  // ─────────────────────────────────────────────────────────────────
+  function showUcOther() {
+    document.getElementById('uc_other_wrap').style.display = document.getElementById('uc').value === 'other' ? 'block' : 'none';
+  }
+  function toggleDM() {
+    document.getElementById('dm_fields').style.display = document.getElementById('dms_yes').checked ? 'none' : 'block';
+  }
+  function toggleMNDA() {
+    const v = document.querySelector('input[name="mnda"]:checked')?.value;
+    document.getElementById('mnda_contact_wrap').classList.toggle('show', v === 'yes');
+  }
+  function toggleIncumbent() {
+    const v = document.querySelector('input[name="incumbent"]:checked')?.value;
+    document.getElementById('incumbent_reveal').classList.toggle('show', v === 'yes');
+  }
+  function toggleComps() {
+    const v = document.querySelector('input[name="comps"]:checked')?.value;
+    document.getElementById('comps_reveal').classList.toggle('show', v === 'yes');
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // DYNAMIC PARTICIPANTS
+  // ─────────────────────────────────────────────────────────────────
+  function addParticipant() {
+    pCount++;
+    const id = 'ep-' + pCount;
+    const div = document.createElement('div');
+    div.className = 'sh-block'; div.id = id;
+    div.innerHTML = `
+      <div class="sh-head">
+        <div class="sh-label">Additional Participant ${pCount}</div>
+        <button type="button" class="btn-remove" onclick="removeParticipant('${id}')">Remove</button>
+      </div>
+      <div class="fr">
+        <div><label>Full Name</label><input type="text" id="p${pCount}_name" placeholder="Full name"/></div>
+        <div><label>Title / Role</label><input type="text" id="p${pCount}_role" placeholder="e.g. Risk Analyst"/></div>
+      </div>
+      <div class="fg"><label>Work Email</label><input type="email" id="p${pCount}_email" placeholder="name@yourcompany.com"/></div>
+    `;
+    document.getElementById('extra-participants').appendChild(div);
+  }
+  function removeParticipant(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // PRELOAD VENDOR ROWS
+  // ─────────────────────────────────────────────────────────────────
+  let pvCount = 0;
+
+  function addVendorRow() {
+    pvCount++;
+    const id = 'pv-' + pvCount;
+    const div = document.createElement('div');
+    div.className = 'sh-block'; div.id = id;
+    div.innerHTML = `
+      <div class="sh-head">
+        <div class="sh-label">Vendor ${pvCount}</div>
+        <button type="button" class="btn-remove" onclick="removeVendorRow('${id}')">Remove</button>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Company name</label>
+          <input type="text" class="pv-name" placeholder="e.g. Tech Mahindra" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit"/>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Domain</label>
+          <input type="text" class="pv-domain" placeholder="techmahindra.com" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit"/>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Tier</label>
+          <select class="pv-tier" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff">
+            <option value="">—</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low / Other</option>
+          </select>
+        </div>
+      </div>
+    `;
+    document.getElementById('preload-wrap').appendChild(div);
+  }
+
+  function removeVendorRow(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // FULL REQUEST SUMMARY (plain-text for client to copy with token)
+  // ─────────────────────────────────────────────────────────────────
+
+  function buildSummary(data, token) {
+    const drvLabels = {
+      audit:    'External audit, regulation, or compliance requirement',
+      internal: 'Internal risk assessment or risk committee initiative',
+      partner:  'Business partner or customer requirement',
+      board:    'Board or executive mandate',
+      ma_deal:  'M&A or investment due diligence',
+      other:    'Other',
+    };
+    const tierLabels = { critical:'Critical', high:'High', medium:'Medium', low:'Low / Other' };
+
+    const lines = [];
+    lines.push('=== SecurityScorecard Evaluation Request ===');
+    lines.push('');
+    lines.push('Domain:     ' + data.domain);
+    if (data.driver && drvLabels[data.driver]) lines.push('Driver:     ' + drvLabels[data.driver]);
+    lines.push('');
+
+    if (data.current_state) {
+      lines.push('Current Approach:');
+      lines.push(data.current_state);
+      lines.push('');
+    }
+
+    if (data.success_criteria) {
+      lines.push('Success Criteria:');
+      lines.push(data.success_criteria);
+      lines.push('');
+    }
+
+    if (data.preloadVendors && data.preloadVendors.length > 0) {
+      lines.push('Vendors to Pre-load:');
+      data.preloadVendors.forEach(v => {
+        let row = '  - ' + (v.name || '(unnamed)');
+        if (v.domain) row += ' (' + v.domain + ')';
+        if (v.tier && tierLabels[v.tier]) row += ' — ' + tierLabels[v.tier];
+        lines.push(row);
+      });
+      lines.push('');
+    }
+
+    lines.push('Evaluation Code:');
+    lines.push(token);
+    lines.push('==========================================');
+    return lines.join('\n');
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // COLLECT & SUBMIT
+  // ─────────────────────────────────────────────────────────────────
+  function collectData() {
+    const caps = [...document.querySelectorAll('input[name="cap"]:checked')].map(e => e.value).join(',');
+    const grc  = [...document.querySelectorAll('input[name="grc"]:checked')].map(e => e.value).join(',');
+
+    // Collect pre-load vendor rows
+    const pvRows = document.querySelectorAll('#preload-wrap .sh-block');
+    const preloadVendors = [];
+    pvRows.forEach(row => {
+      const nameEl   = row.querySelector('input.pv-name');
+      const domainEl = row.querySelector('input.pv-domain');
+      const tierEl   = row.querySelector('select.pv-tier');
+      const name   = nameEl?.value.trim()   || '';
+      const domain = domainEl?.value.trim() || '';
+      const tier   = tierEl?.value          || '';
+      if (name || domain) preloadVendors.push({ name, domain, tier });
+    });
+
+    return {
+      uc:              document.getElementById('uc').value,
+      current_state:   document.getElementById('current_state')?.value.trim() || '',
+      success_criteria:document.getElementById('sc')?.value.trim() || '',
+      driver:          document.getElementById('driver')?.value || '',
+      urgency:         document.querySelector('input[name="urgency"]:checked')?.value || '',
+      domain:          document.getElementById('domain').value.trim(),
+      vendors:         document.getElementById('vendors').value,
+      preloadVendors,
+      caps,
+      te_name:         document.getElementById('te_name')?.value.trim() || '',
+      te_email:        document.getElementById('te_email').value.trim(),
+      mnda:            document.querySelector('input[name="mnda"]:checked')?.value || '',
+      incumbent:       document.querySelector('input[name="incumbent"]:checked')?.value || '',
+      comps:           document.querySelector('input[name="comps"]:checked')?.value || '',
+      rfp:             document.querySelector('input[name="rfp"]:checked')?.value || '',
+      grc,
+      deadline:        document.getElementById('deadline').value,
+    };
+  }
+
+  let _formData = null;
+
+  function submitForm() {
+    if (!validate(5)) return;
+    _formData = collectData();
+    const token = generateToken(_formData);
+    document.getElementById('page-5').classList.remove('active');
+    document.querySelector('.prog-wrap').style.display = 'none';
+    document.getElementById('sn5').classList.remove('active');
+    document.getElementById('sn5').classList.add('done');
+    document.getElementById('token-display').textContent = token;
+    document.getElementById('summary-text').value = buildSummary(_formData, token);
+    document.getElementById('success-page').style.display = 'block';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function copyToken() {
+    const token = document.getElementById('token-display').textContent;
+    const confirm = document.getElementById('copy-confirm');
+    navigator.clipboard.writeText(token).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = token; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    });
+    confirm.classList.add('show');
+    setTimeout(() => confirm.classList.remove('show'), 2500);
+  }
+
+  function copySummary() {
+    const text = document.getElementById('summary-text').value;
+    const confirm = document.getElementById('summary-confirm');
+    navigator.clipboard.writeText(text).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    });
+    confirm.classList.add('show');
+    setTimeout(() => confirm.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>
