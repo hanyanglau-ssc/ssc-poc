@@ -122,6 +122,11 @@
   .token-value{font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:var(--teal);letter-spacing:2px;word-break:break-all;margin-bottom:18px;line-height:1.5}
   .btn-copy-lg{padding:10px 28px;background:var(--teal);color:var(--navy);border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
   .btn-copy-lg:hover{opacity:.88}
+  .hero-offline{margin-top:22px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+  .btn-offline{padding:9px 22px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s;white-space:nowrap}
+  .btn-offline:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.5)}
+  .btn-offline:disabled{opacity:.45;cursor:not-allowed}
+  .hero-offline-note{font-size:12.5px;color:rgba(255,255,255,.5)}
   .copy-confirm{font-size:12.5px;color:var(--teal);margin-top:10px;height:18px;opacity:0;transition:opacity .2s}
   .copy-confirm.show{opacity:1}
   .next-steps{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;text-align:left;margin-top:20px}
@@ -159,6 +164,10 @@
 <div class="hero">
   <h1>Request a Platform Evaluation</h1>
   <p>Tell us about your security risk management goals and we'll design an evaluation that fits your timeline and team.</p>
+  <div class="hero-offline">
+    <button class="btn-offline" id="offline-btn" onclick="downloadBlankForm()">&#8595; Download Offline Form</button>
+    <span class="hero-offline-note">Prefer Word? Download, fill in, and email to your representative.</span>
+  </div>
 </div>
 
 <div class="prog-wrap">
@@ -932,6 +941,304 @@
     confirm.classList.add('show');
     setTimeout(() => confirm.classList.remove('show'), 2500);
   }
+
+  async function downloadBlankForm() {
+    const btn = document.getElementById('offline-btn');
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Building…';
+    try {
+      const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+              WidthType, ShadingType, BorderStyle, AlignmentType } =
+            await import('https://esm.sh/docx@8.5.0');
+
+      // ── Style constants ──────────────────────────────────────────────
+      const NAVY   = '061325';
+      const BLUE   = '1756E8';
+      const LIGHT  = 'F3F5FB';
+      const INPUT  = 'FFFFFF';
+      const BORDER = 'C8D0E8';
+      const MUTED  = '6B7A99';
+
+      const bdr  = (c = BORDER) => ({ style: BorderStyle.SINGLE, size: 4, color: c });
+      const bd   = { top: bdr(), bottom: bdr(), left: bdr(), right: bdr() };
+      const cm   = { top: 100, bottom: 100, left: 140, right: 140 };
+      const cmLg = { top: 160, bottom: 160, left: 140, right: 140 };
+
+      const W  = 9400;
+      const LW = 3200;
+      const FW = W - LW;
+      const W3 = Math.floor(W / 3);
+
+      const r = (text, o = {}) =>
+        new TextRun({ text: String(text ?? ''), font: 'Arial', size: 20, ...o });
+      const p = (ch, o = {}) =>
+        new Paragraph({ children: ch, spacing: { before: 40, after: 40 }, ...o });
+      const gap = (before = 0, after = 220) =>
+        p([r('')], { spacing: { before, after } });
+
+      const ql = (text, hint) => {
+        const runs = [r(text, { bold: true })];
+        if (hint) runs.push(r('  ' + hint, { color: MUTED, italics: true }));
+        return p(runs);
+      };
+
+      const sectionRow = (title) =>
+        new Table({
+          width: { size: W, type: WidthType.DXA }, columnWidths: [W],
+          rows: [new TableRow({ children: [new TableCell({
+            borders: { top: bdr(NAVY), bottom: bdr(NAVY), left: bdr(NAVY), right: bdr(NAVY) },
+            shading: { fill: NAVY, type: ShadingType.CLEAR },
+            margins: { top: 120, bottom: 120, left: 160, right: 160 },
+            width: { size: W, type: WidthType.DXA },
+            children: [p([r(title, { bold: true, size: 22, color: 'FFFFFF' })], { spacing: { before: 0, after: 0 } })]
+          })]})]
+        });
+
+      const row2 = (label, hint, inputHint = '', tall = false) =>
+        new TableRow({ children: [
+          new TableCell({ borders: bd, width: { size: LW, type: WidthType.DXA },
+            shading: { fill: LIGHT, type: ShadingType.CLEAR }, margins: cm,
+            children: [ql(label, hint)] }),
+          new TableCell({ borders: bd, width: { size: FW, type: WidthType.DXA },
+            shading: { fill: INPUT, type: ShadingType.CLEAR }, margins: tall ? cmLg : cm,
+            children: [p([r(inputHint || '', { color: 'CCCCCC', italics: true })],
+              { spacing: { before: 0, after: tall ? 360 : 0 } })] }),
+        ]});
+
+      const optRow = (marker, text) =>
+        p([r(marker + '  ', { color: MUTED }), r(text)],
+          { spacing: { before: 20, after: 20 }, indent: { left: 200 } });
+
+      const labelRow = (text, hint) =>
+        new TableRow({ children: [new TableCell({
+          borders: bd, width: { size: W, type: WidthType.DXA },
+          shading: { fill: LIGHT, type: ShadingType.CLEAR }, margins: cm,
+          columnSpan: 2,
+          children: [ql(text, hint)]
+        })]});
+
+      const optionsRow = (opts, marker = '( )') =>
+        new TableRow({ children: [new TableCell({
+          borders: bd, width: { size: W, type: WidthType.DXA },
+          margins: { top: 80, bottom: 80, left: 200, right: 140 }, columnSpan: 2,
+          children: opts.map(o => optRow(marker, o))
+        })]});
+
+      const ifYesRow = (label) =>
+        new TableRow({ children: [
+          new TableCell({ borders: bd, width: { size: LW, type: WidthType.DXA },
+            shading: { fill: 'FFF9EC', type: ShadingType.CLEAR }, margins: cm,
+            children: [p([r('   └ ', { color: MUTED }), r(label, { italics: true })])] }),
+          new TableCell({ borders: bd, width: { size: FW, type: WidthType.DXA },
+            shading: { fill: INPUT, type: ShadingType.CLEAR }, margins: cm,
+            children: [p([r('')])] }),
+        ]});
+
+      const col3Table = (headers, widths, emptyRows) => {
+        const hRow = new TableRow({ children: headers.map((h, i) =>
+          new TableCell({ borders: bd, width: { size: widths[i], type: WidthType.DXA },
+            shading: { fill: NAVY, type: ShadingType.CLEAR }, margins: cm,
+            children: [p([r(h, { bold: true, color: 'FFFFFF' })])] })
+        )});
+        const dRows = Array.from({ length: emptyRows }, () =>
+          new TableRow({ children: widths.map(w =>
+            new TableCell({ borders: bd, width: { size: w, type: WidthType.DXA }, margins: cmLg,
+              children: [p([r('')])] })
+          )})
+        );
+        return new Table({
+          width: { size: widths.reduce((a, b) => a + b, 0), type: WidthType.DXA },
+          columnWidths: widths, rows: [hRow, ...dRows]
+        });
+      };
+
+      const textAreaRow = (label, hint, lines = 4) =>
+        new Table({
+          width: { size: W, type: WidthType.DXA }, columnWidths: [W],
+          rows: [
+            new TableRow({ children: [new TableCell({ borders: bd, width: { size: W, type: WidthType.DXA },
+              shading: { fill: LIGHT, type: ShadingType.CLEAR }, margins: cm,
+              children: [ql(label, hint)] })]}),
+            new TableRow({ children: [new TableCell({ borders: bd, width: { size: W, type: WidthType.DXA },
+              shading: { fill: INPUT, type: ShadingType.CLEAR }, margins: cm,
+              children: [p([r('')], { spacing: { before: 0, after: lines * 240 } })] })]}),
+          ]
+        });
+
+      // ── Build document ───────────────────────────────────────────────
+      const ch = [];
+
+      ch.push(
+        p([r('SecurityScorecard', { bold: true, size: 28, color: BLUE })], { spacing: { before: 0, after: 60 } }),
+        p([r('Platform Evaluation Request', { bold: true, size: 40, color: NAVY })], { spacing: { before: 0, after: 80 } }),
+        p([r('Complete this form and email it to your SecurityScorecard representative. Fields marked * are required.',
+            { size: 20, color: MUTED, italics: true })], { spacing: { before: 0, after: 320 } })
+      );
+
+      // 1. Use Case & Background
+      ch.push(sectionRow('1.  Use Case & Background'), gap(0, 0));
+      ch.push(new Table({ width: { size: W, type: WidthType.DXA }, columnWidths: [LW, FW], rows: [
+        labelRow('Primary Use Case *', 'Select one'),
+        optionsRow([
+          'Third-Party / Vendor Risk Management (TPRM)',
+          'Extended Supply Chain — 4th-party & shadow vendor discovery',
+          'Responding to Customer Security Questionnaires',
+          'Internet Infrastructure & Attack Surface Intelligence',
+          'CVE & Vulnerability Intelligence',
+          'Cyber Insurance Underwriting / Renewal',
+          'M&A / Investment Due Diligence',
+          'Regulatory / Compliance Reporting',
+          'Board-Level Risk Reporting',
+          'Own Organisation Attack Surface Monitoring',
+          'Other (describe below)',
+        ]),
+        row2('If other, describe:', ''),
+      ]}));
+      ch.push(gap());
+      ch.push(textAreaRow('Current Approach *', 'How are you currently managing this risk area?', 4));
+      ch.push(gap());
+      ch.push(textAreaRow('Success Criteria *', 'What would a successful evaluation look like for your team?', 4));
+      ch.push(gap());
+      ch.push(new Table({ width: { size: W, type: WidthType.DXA }, columnWidths: [LW, FW], rows: [
+        labelRow('Evaluation Driver *', 'Select one'),
+        optionsRow([
+          'External Audit / Regulation / Compliance',
+          'Internal Risk Assessment or Risk Committee',
+          'Business Partner or Customer Requirement',
+          'Board or Executive Mandate',
+          'M&A or Investment Due Diligence',
+          'Other',
+        ]),
+        labelRow('Urgency *', 'Select one'),
+        optionsRow([
+          'Immediate',
+          'Within 30 days',
+          'Within 90 days',
+          'Exploratory — no fixed deadline',
+        ]),
+      ]}));
+      ch.push(gap());
+
+      // 2. Organisation
+      ch.push(sectionRow('2.  Organisation'), gap(0, 0));
+      ch.push(new Table({ width: { size: W, type: WidthType.DXA }, columnWidths: [LW, FW], rows: [
+        row2('Primary Domain *', '', 'e.g. yourcompany.com'),
+      ]}));
+      ch.push(gap());
+      ch.push(textAreaRow('Additional Domains', 'Other domains belonging to your organisation — one per line', 3));
+      ch.push(gap());
+      ch.push(new Table({ width: { size: W, type: WidthType.DXA }, columnWidths: [LW, FW], rows: [
+        labelRow('Third-Party Vendor Volume *', 'Select one — vendors managed per year'),
+        optionsRow(['Fewer than 50', '50–200', '200–500', '500–2,000', 'More than 2,000', 'Not applicable — self-monitoring only']),
+        labelRow('Critical / Tier-1 Vendors', 'Select one'),
+        optionsRow(['Fewer than 10', '10–50', '50–200', 'More than 200', 'Not yet tiered / unknown']),
+      ]}));
+      ch.push(gap());
+
+      // 3. Vendors to Pre-load
+      ch.push(sectionRow('3.  Vendors to Pre-load  (optional)'), gap(0, 8));
+      ch.push(p([r('List specific third-party vendors you would like included in the evaluation. Tier: Critical / High / Medium / Low.',
+          { color: MUTED, italics: true, size: 18 })], { spacing: { before: 0, after: 100 } }));
+      ch.push(col3Table(['Company Name', 'Domain', 'Tier'], [W3 + 34, W3, W3], 6));
+      ch.push(gap());
+
+      // 4. Competitive & Compliance
+      ch.push(sectionRow('4.  Competitive & Compliance'), gap(0, 0));
+      ch.push(new Table({ width: { size: W, type: WidthType.DXA }, columnWidths: [LW, FW], rows: [
+        labelRow('MNDA Requirement *', 'Select one'),
+        optionsRow(['Not required', 'Required — pending signature', 'Already in place']),
+        ifYesRow('If required — MNDA contact name & email:'),
+        labelRow('Incumbent Platform', 'Are you currently using a third-party risk or security ratings platform?'),
+        optionsRow(['No incumbent platform', 'Yes — currently using an incumbent platform', 'Currently evaluating options']),
+        ifYesRow('If yes — which platform?'),
+        labelRow('Other Vendors Being Evaluated', 'Are you evaluating other vendors simultaneously?'),
+        optionsRow(['Not evaluating other vendors', 'Yes — evaluating simultaneously', 'Undecided']),
+        ifYesRow('If yes — which vendors?'),
+        labelRow('RFP / Procurement Process', 'Select one'),
+        optionsRow(['Formal RFP in place', 'No formal RFP', 'To be confirmed']),
+      ]}));
+      ch.push(gap());
+
+      // 5. Capabilities & Platforms
+      ch.push(sectionRow('5.  Capabilities & Platforms'), gap(0, 0));
+      ch.push(new Table({ width: { size: W, type: WidthType.DXA }, columnWidths: [LW, FW], rows: [
+        labelRow('Capabilities to Validate', 'Select all that apply'),
+        optionsRow([
+          'Vendor security ratings and scorecards',
+          'Continuous monitoring and real-time alerts',
+          'Third-party risk assessments and questionnaires',
+          '4th-party and shadow vendor discovery',
+          'Executive reporting and dashboards',
+          'API and GRC platform integration',
+          'Internet infrastructure intelligence',
+          'AI-assisted risk prioritisation and breach monitoring',
+        ], '[ ]'),
+        labelRow('Existing GRC / Security Platforms', 'Select all that apply'),
+        optionsRow(['ServiceNow', 'Archer / RSA', 'OneTrust', 'Splunk', 'Jira / Atlassian', 'Other / custom'], '[ ]'),
+      ]}));
+      ch.push(gap());
+
+      // 6. Timeline
+      ch.push(sectionRow('6.  Timeline'), gap(0, 0));
+      ch.push(new Table({ width: { size: W, type: WidthType.DXA }, columnWidths: [LW, FW], rows: [
+        row2('Evaluation Start Date *', '', 'DD / MM / YYYY'),
+        row2('Purchase Decision Date *', '', 'DD / MM / YYYY'),
+        row2('Blackout Dates / Unavailable Periods', '', 'e.g. 15 Jun – 30 Jun'),
+      ]}));
+      ch.push(gap());
+
+      // 7. Contacts
+      ch.push(sectionRow('7.  Contacts'), gap(0, 0));
+      ch.push(new Table({ width: { size: W, type: WidthType.DXA }, columnWidths: [LW, FW], rows: [
+        row2('Technical Evaluator — Full Name *', ''),
+        row2('Title / Role', ''),
+        row2('Work Email *', ''),
+        labelRow('Decision Maker', 'Is the Decision Maker the same person as the Technical Evaluator?'),
+        optionsRow(['Yes — same person', 'No — different person (provide details below)']),
+        row2('Decision Maker — Full Name', ''),
+        row2('Title / Role', ''),
+        row2('Work Email', ''),
+      ]}));
+      ch.push(gap());
+      ch.push(p([r('Additional Participants  (optional)', { bold: true })], { spacing: { before: 0, after: 80 } }));
+      ch.push(col3Table(['Full Name', 'Title / Role', 'Work Email'], [W3 + 34, W3, W3], 4));
+      ch.push(gap());
+      ch.push(textAreaRow('Additional Notes  (optional)', '', 4));
+
+      ch.push(
+        gap(300, 0),
+        p([r('© 2026 SecurityScorecard Inc.  ·  Information submitted is handled in accordance with our Privacy Policy.',
+            { size: 16, color: MUTED })],
+          { spacing: { before: 0, after: 0 },
+            border: { top: { style: BorderStyle.SINGLE, size: 4, color: BORDER, space: 4 } } })
+      );
+
+      // ── Assemble ─────────────────────────────────────────────────────
+      const doc = new Document({
+        sections: [{
+          properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 } } },
+          children: ch
+        }]
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'SSC_Evaluation_Request_Form.docx';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error('DOCX generation failed:', err);
+      alert('Download failed. Please check your internet connection and try again.');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = orig;
+    }
+  }
+
 </script>
 </body>
 </html>
