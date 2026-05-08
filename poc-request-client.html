@@ -267,7 +267,7 @@
         <div id="preload-wrap"></div>
         <button type="button" class="btn-add" onclick="addVendorRow()">+ Add Vendor</button>
       </div>
-      <div class="fr">
+      <div class="fr" style="margin-top:22px">
         <div>
           <label for="vendors">Total vendors managed in your TPRM programme each year <span class="req">*</span></label>
           <select id="vendors" required>
@@ -292,7 +292,7 @@
           </select>
         </div>
       </div>
-      <div class="fg">
+      <div class="fg" style="margin-top:22px">
         <label>Which capabilities are most important to validate?</label>
         <div class="cbg">
           <label class="cbi"><input type="checkbox" name="cap" value="ratings"><span>Vendor security ratings and scorecards</span></label>
@@ -450,11 +450,11 @@
 
       <div class="fr">
         <div>
-          <label for="start_date">Preferred evaluation start date</label>
-          <input type="date" id="start_date" />
+          <label for="start_date">Preferred evaluation start date <span class="req">*</span></label>
+          <input type="date" id="start_date" required />
         </div>
         <div>
-          <label for="deadline">Vendor decision deadline <span class="req">*</span></label>
+          <label for="deadline">Purchase decision date <span class="req">*</span></label>
           <input type="date" id="deadline" required />
         </div>
       </div>
@@ -480,29 +480,27 @@
     </div>
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="prev(5)">← Back</button>
-      <button class="btn btn-primary" onclick="submitForm()">Submit Request →</button>
+      <button class="btn btn-primary" onclick="submitForm()">Prepare My Request →</button>
     </div>
   </div>
 
   <!-- Token success page -->
   <div id="success-page">
     <div class="suc-card">
-      <div class="suc-icon">✓</div>
-      <h2>Your Evaluation Code</h2>
-      <p>Copy the code below and send it to your SecurityScorecard representative. They will use it to set up your evaluation. Do not modify the code.</p>
+      <div class="suc-icon">📋</div>
+      <h2>Your Request is Ready to Send</h2>
+      <p>This form does <strong>not</strong> send your request automatically. Copy the text below and <strong>email it</strong> to your SecurityScorecard representative to begin the process.</p>
 
-      <div class="token-box">
-        <div class="token-value" id="token-display">—</div>
-        <button class="btn-copy-lg" onclick="copyToken()">Copy Code</button>
-        <div class="copy-confirm" id="copy-confirm">Copied to clipboard</div>
+      <div class="token-box" style="padding:20px 24px">
+        <textarea id="summary-text" readonly style="width:100%;font-family:'Courier New',Courier,monospace;font-size:11px;padding:0;border:none;background:transparent;color:var(--teal);resize:vertical;min-height:200px;line-height:1.65;outline:none"></textarea>
+        <button class="btn-copy-lg" onclick="copySummary()">Copy Request</button>
+        <div class="copy-confirm" id="summary-confirm">Copied to clipboard</div>
       </div>
 
-      <div class="next-steps" style="margin-bottom:0">
-        <div class="next-steps-title">Full Request Summary</div>
-        <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;line-height:1.5">Copy this summary and send it to your SecurityScorecard representative — it includes your evaluation code plus all the context they need to get started.</p>
-        <textarea id="summary-text" readonly style="width:100%;font-family:'Courier New',Courier,monospace;font-size:11px;padding:12px;border:1px solid var(--border);border-radius:6px;background:#F8F9FC;color:var(--text);resize:vertical;min-height:180px;line-height:1.55;display:block"></textarea>
-        <button class="btn-copy-lg" style="margin-top:10px;background:var(--blue);color:#fff" onclick="copySummary()">Copy Full Request</button>
-        <div class="copy-confirm" id="summary-confirm">Copied to clipboard</div>
+      <div class="next-steps">
+        <div class="next-steps-title">What happens next</div>
+        <div class="next-step"><div class="ns-n">1</div><div>Copy the request above and paste it into a new email to your SecurityScorecard representative.</div></div>
+        <div class="next-step"><div class="ns-n">2</div><div>Your Solutions Architect will review your request and confirm the evaluation format, schedule, and access details within one business day.</div></div>
       </div>
     </div>
   </div>
@@ -515,121 +513,93 @@
 
 <script>
   // ─────────────────────────────────────────────────────────────────
-  // TOKEN ENCODING
-  // Produces a fixed 32-character token (formatted as SSC-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX)
-  // All structured field choices are packed into a deterministic 32-position string,
-  // then scrambled with a fixed permutation + per-position rotation.
-  // The decoder (poc-decoder.html) uses the same constants to reverse the process.
+  // DISPLAY LABELS
+  // Human-readable labels for coded field values, used when building
+  // the request summary the client emails to their representative.
   // ─────────────────────────────────────────────────────────────────
 
-  const CS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'; // 36 chars, indices 0-35
-
-  // Fixed permutation of positions 0-31 (verified valid permutation)
-  const PERM = [7,14,2,25,0,18,31,11,4,22,16,28,9,3,19,26,1,12,23,6,30,17,8,24,15,29,5,20,27,13,21,10];
-
-  // Per-position rotation amounts (0-35)
-  const SHIFT = [5,11,3,17,7,13,2,19,8,1,14,6,20,4,16,9,22,0,12,18,3,15,7,11,24,6,10,21,5,17,13,8];
-
-  // Field value tables — must match poc-decoder.html exactly
-  const T = {
-    UC:  ['','tprm','cyber_insurance','ma','supply_chain','regulatory','board','self','other','questionnaire_response','internet_intel','cve_intel'],
-    URG: ['','immediate','30d','90d','exploratory'],
-    VEN: ['','lt50','50_200','200_500','500_2000','gt2000','na'],
-    DRV: ['','audit','internal','partner','board','ma_deal','other'],
-    MND: ['','no','yes','signed'],
-    DUR: ['','session','1week','2weeks','flexible'],
-    INC: ['','no','yes','evaluating'],
-    CMP: ['','no','yes','undecided'],
-    RFP: ['','yes','no','tbd'],
-    CAP: ['ratings','monitoring','questionnaires','avd','reporting','api','internet_intel','ai_insights'],
-    GRC: ['servicenow','archer','onetrust','splunk','jira','other'],
+  const DISP = {
+    UC: {
+      tprm:                   'Third-Party / Vendor Risk Management (TPRM)',
+      supply_chain:           'Extended Supply Chain — 4th-party & shadow vendor discovery',
+      questionnaire_response: 'Responding to Customer Security Questionnaires',
+      internet_intel:         'Internet Infrastructure & Attack Surface Intelligence',
+      cve_intel:              'CVE & Vulnerability Intelligence',
+      cyber_insurance:        'Cyber Insurance Underwriting / Renewal',
+      ma:                     'M&A / Investment Due Diligence',
+      regulatory:             'Regulatory / Compliance Reporting',
+      board:                  'Board-Level Risk Reporting',
+      self:                   'Own Organisation Attack Surface Monitoring',
+      other:                  'Other',
+    },
+    URG: {
+      immediate:   'Immediate',
+      '30d':       'Within 30 days',
+      '90d':       'Within 90 days',
+      exploratory: 'Exploratory',
+    },
+    VEN: {
+      lt50:       'Fewer than 50 vendors/year',
+      '50_200':   '50–200 vendors/year',
+      '200_500':  '200–500 vendors/year',
+      '500_2000': '500–2,000 vendors/year',
+      gt2000:     'More than 2,000 vendors/year',
+      na:         'Not applicable — self-monitoring only',
+    },
+    CRIT: {
+      lt10:       'Fewer than 10',
+      '10_50':    '10–50',
+      '50_200':   '50–200',
+      gt200:      'More than 200',
+      not_tiered: 'Not yet tiered / unknown',
+    },
+    DRV: {
+      audit:   'External Audit / Regulation / Compliance',
+      internal:'Internal Risk Assessment or Risk Committee',
+      partner: 'Business Partner or Customer Requirement',
+      board:   'Board or Executive Mandate',
+      ma_deal: 'M&A or Investment Due Diligence',
+      other:   'Other',
+    },
+    MND: {
+      no:     'Not required',
+      yes:    'Required — pending signature',
+      signed: 'Already in place',
+    },
+    INC: {
+      no:         'No incumbent platform',
+      yes:        'Has incumbent platform',
+      evaluating: 'Currently evaluating options',
+    },
+    CMP: {
+      no:       'Not evaluating other vendors',
+      yes:      'Evaluating other vendors simultaneously',
+      undecided:'Undecided',
+    },
+    RFP: {
+      yes: 'Formal RFP in place',
+      no:  'No formal RFP',
+      tbd: 'To be confirmed',
+    },
+    CAP: {
+      ratings:      'Vendor security ratings and scorecards',
+      monitoring:   'Continuous monitoring and real-time alerts',
+      questionnaires:'Third-party risk assessments and questionnaires',
+      avd:          '4th-party and shadow vendor discovery',
+      reporting:    'Executive reporting and dashboards',
+      api:          'API and GRC platform integration',
+      internet_intel:'Internet infrastructure intelligence',
+      ai_insights:  'AI-assisted risk prioritisation and breach monitoring',
+    },
+    GRC: {
+      servicenow:'ServiceNow',
+      archer:    'Archer / RSA',
+      onetrust:  'OneTrust',
+      splunk:    'Splunk',
+      jira:      'Jira / Atlassian',
+      other:     'Other / custom',
+    },
   };
-
-  function toCS(val, table) {
-    const idx = table.indexOf(val);
-    return idx < 0 ? CS[0] : CS[idx];
-  }
-
-  function sanitize(str, len) {
-    // Keep only alphanumeric chars, uppercase, pad/trim to exactly `len` chars
-    const s = (str || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    return s.substring(0, len).padEnd(len, '0');
-  }
-
-  function buildRaw(d) {
-    const raw = new Array(32).fill('0');
-
-    // [0]  Version marker
-    raw[0] = '1';
-
-    // [2–9]  Domain: first 8 alphanumeric chars
-    const domPart = sanitize(d.domain, 8);
-    for (let i = 0; i < 8; i++) raw[2 + i] = domPart[i];
-
-    // [10–13]  TE email local-part: first 4 alphanumeric chars
-    const emailLocal = sanitize((d.te_email || '').split('@')[0], 4);
-    for (let i = 0; i < 4; i++) raw[10 + i] = emailLocal[i];
-
-    // [14]  Use case
-    raw[14] = toCS(d.uc, T.UC);
-    // [15]  Urgency
-    raw[15] = toCS(d.urgency, T.URG);
-    // [16]  Vendor count
-    raw[16] = toCS(d.vendors, T.VEN);
-    // [17]  Compelling event / driver
-    raw[17] = toCS(d.driver, T.DRV);
-    // [18]  MNDA
-    raw[18] = toCS(d.mnda, T.MND);
-    // [19]  Duration preference
-    raw[19] = toCS(d.duration, T.DUR);
-    // [20]  Incumbent
-    raw[20] = toCS(d.incumbent, T.INC);
-    // [21]  Competitors
-    raw[21] = toCS(d.comps, T.CMP);
-    // [22]  RFP
-    raw[22] = toCS(d.rfp, T.RFP);
-
-    // [23–24]  Capabilities bitmap → 2 hex-like chars (using CS[0-15] for nibbles)
-    const selectedCaps = (d.caps || '').split(',');
-    let capBits = 0;
-    T.CAP.forEach((c, i) => { if (selectedCaps.includes(c)) capBits |= (1 << i); });
-    raw[23] = CS[(capBits >> 4) & 0xF];
-    raw[24] = CS[capBits & 0xF];
-
-    // [25]  GRC bitmap nibble
-    const selectedGRC = (d.grc || '').split(',');
-    let grcBits = 0;
-    T.GRC.forEach((g, i) => { if (selectedGRC.includes(g)) grcBits |= (1 << i); });
-    raw[25] = CS[grcBits & 0xF];
-
-    // [26–31]  Deadline: MMDDYY (6 digits), '000000' if not set
-    const dl = (d.deadline || '').replace(/-/g, '');  // YYYYMMDD
-    const mmddyy = dl.length === 8 ? dl.substring(4,8) + dl.substring(2,4) : '000000';
-    const dlClean = mmddyy.replace(/[^0-9]/g, '').padEnd(6, '0');
-    for (let i = 0; i < 6; i++) raw[26 + i] = dlClean[i];
-
-    // [1]  Checksum: sum of indices 2-31 mod 36
-    const sum = raw.slice(2).reduce((acc, c) => acc + CS.indexOf(c), 0);
-    raw[1] = CS[sum % 36];
-
-    return raw.join('');
-  }
-
-  function scramble(rawStr) {
-    // Step 1: apply positional permutation
-    const permuted = new Array(32);
-    for (let i = 0; i < 32; i++) permuted[i] = rawStr[PERM[i]];
-    // Step 2: rotate each character by SHIFT[i]
-    return permuted.map((c, i) => CS[(CS.indexOf(c) + SHIFT[i]) % 36]).join('');
-  }
-
-  function formatToken(t) {
-    return 'SSC-' + t.substring(0,8) + '-' + t.substring(8,16) + '-' + t.substring(16,24) + '-' + t.substring(24,32);
-  }
-
-  function generateToken(data) {
-    return formatToken(scramble(buildRaw(data)));
-  }
 
   // ─────────────────────────────────────────────────────────────────
   // NAVIGATION
@@ -759,25 +729,77 @@
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // FULL REQUEST SUMMARY (plain-text for client to copy with token)
+  // REQUEST SUMMARY
+  // Single human-readable text block the client emails to their rep.
   // ─────────────────────────────────────────────────────────────────
 
-  function buildSummary(data, token) {
-    const drvLabels = {
-      audit:    'External audit, regulation, or compliance requirement',
-      internal: 'Internal risk assessment or risk committee initiative',
-      partner:  'Business partner or customer requirement',
-      board:    'Board or executive mandate',
-      ma_deal:  'M&A or investment due diligence',
-      other:    'Other',
-    };
+  function fmtDate(val) {
+    if (!val) return '';
+    const d = new Date(val + 'T00:00:00');
+    return isNaN(d) ? val : d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+  }
+
+  function buildSummary(data) {
+    const lbl = (map, val) => (map && val && map[val]) ? map[val] : '';
     const tierLabels = { critical:'Critical', high:'High', medium:'Medium', low:'Low / Other' };
 
     const lines = [];
     lines.push('=== SecurityScorecard Evaluation Request ===');
     lines.push('');
-    lines.push('Domain:     ' + data.domain);
-    if (data.driver && drvLabels[data.driver]) lines.push('Driver:     ' + drvLabels[data.driver]);
+    lines.push('Domain:       ' + data.domain);
+    if (data.extra_domains) {
+      const xd = data.extra_domains.split('\n').map(d => d.trim()).filter(Boolean);
+      if (xd.length) lines.push('Extra Domains: ' + xd.join(', '));
+    }
+    if (data.uc) {
+      const ucDisplay = (data.uc === 'other' && data.uc_other) ? data.uc_other : (lbl(DISP.UC, data.uc) || data.uc);
+      lines.push('Use Case:     ' + ucDisplay);
+    }
+    if (data.driver)          lines.push('Driver:          ' + (lbl(DISP.DRV, data.driver) || data.driver));
+    if (data.urgency)         lines.push('Urgency:         ' + (lbl(DISP.URG, data.urgency) || data.urgency));
+    if (data.vendors)         lines.push('Vendor Count:    ' + (lbl(DISP.VEN, data.vendors) || data.vendors));
+    if (data.critical_vendors)lines.push('Critical Vendors: ' + (lbl(DISP.CRIT, data.critical_vendors) || data.critical_vendors));
+    if (data.mnda) {
+      let mndaLine = 'MNDA:            ' + (lbl(DISP.MND, data.mnda) || data.mnda);
+      if (data.mnda === 'yes' && data.mnda_contact) mndaLine += ' — Contact: ' + data.mnda_contact;
+      lines.push(mndaLine);
+    }
+    if (data.incumbent) {
+      let incLine = 'Incumbent:       ' + (lbl(DISP.INC, data.incumbent) || data.incumbent);
+      if (data.incumbent === 'yes' && data.incumbent_name) incLine += ' (' + data.incumbent_name + ')';
+      lines.push(incLine);
+    }
+    if (data.comps) {
+      let cmpLine = 'Competitors:     ' + (lbl(DISP.CMP, data.comps) || data.comps);
+      if (data.comps === 'yes' && data.comp_names) cmpLine += ' (' + data.comp_names + ')';
+      lines.push(cmpLine);
+    }
+    if (data.rfp)             lines.push('RFP:             ' + (lbl(DISP.RFP, data.rfp) || data.rfp));
+    if (data.start_date)      lines.push('Start Date:      ' + fmtDate(data.start_date));
+    if (data.deadline)        lines.push('Deadline:        ' + fmtDate(data.deadline));
+    if (data.blackout)        lines.push('Blackout:        ' + data.blackout);
+    if (data.te_name) {
+      const teLabel = data.te_name + (data.te_role ? ', ' + data.te_role : '');
+      lines.push('Evaluator:       ' + teLabel);
+    }
+    if (data.te_email)        lines.push('Email:           ' + data.te_email);
+    if (data.dm_same !== 'yes') {
+      if (data.dm_name) {
+        const dmLabel = data.dm_name + (data.dm_role ? ', ' + data.dm_role : '');
+        lines.push('Decision Maker:  ' + dmLabel);
+      }
+      if (data.dm_email)      lines.push('DM Email:        ' + data.dm_email);
+    }
+
+    if (data.caps) {
+      const capLabels = data.caps.split(',').filter(Boolean).map(c => DISP.CAP[c] || c);
+      if (capLabels.length) lines.push('Capabilities: ' + capLabels.join('; '));
+    }
+    if (data.grc) {
+      const grcLabels = data.grc.split(',').filter(Boolean).map(g => DISP.GRC[g] || g);
+      if (grcLabels.length) lines.push('GRC:          ' + grcLabels.join('; '));
+    }
+
     lines.push('');
 
     if (data.current_state) {
@@ -785,13 +807,11 @@
       lines.push(data.current_state);
       lines.push('');
     }
-
     if (data.success_criteria) {
       lines.push('Success Criteria:');
       lines.push(data.success_criteria);
       lines.push('');
     }
-
     if (data.preloadVendors && data.preloadVendors.length > 0) {
       lines.push('Vendors to Pre-load:');
       data.preloadVendors.forEach(v => {
@@ -803,8 +823,22 @@
       lines.push('');
     }
 
-    lines.push('Evaluation Code:');
-    lines.push(token);
+    if (data.participants && data.participants.length > 0) {
+      lines.push('Additional Participants:');
+      data.participants.forEach(p => {
+        let row = '  - ' + (p.name || '(unnamed)');
+        if (p.role)  row += ', ' + p.role;
+        if (p.email) row += ' — ' + p.email;
+        lines.push(row);
+      });
+      lines.push('');
+    }
+    if (data.notes) {
+      lines.push('Notes:');
+      lines.push(data.notes);
+      lines.push('');
+    }
+
     lines.push('==========================================');
     return lines.join('\n');
   }
@@ -829,53 +863,62 @@
       if (name || domain) preloadVendors.push({ name, domain, tier });
     });
 
+    // Collect additional participants
+    const participants = [];
+    document.querySelectorAll('#extra-participants .sh-block').forEach(block => {
+      const textInputs = block.querySelectorAll('input[type=text]');
+      const name  = textInputs[0]?.value.trim() || '';
+      const role  = textInputs[1]?.value.trim() || '';
+      const email = block.querySelector('input[type=email]')?.value.trim() || '';
+      if (name || email) participants.push({ name, role, email });
+    });
+
     return {
-      uc:              document.getElementById('uc').value,
-      current_state:   document.getElementById('current_state')?.value.trim() || '',
-      success_criteria:document.getElementById('sc')?.value.trim() || '',
-      driver:          document.getElementById('driver')?.value || '',
-      urgency:         document.querySelector('input[name="urgency"]:checked')?.value || '',
-      domain:          document.getElementById('domain').value.trim(),
-      vendors:         document.getElementById('vendors').value,
+      uc:               document.getElementById('uc').value,
+      uc_other:         document.getElementById('uc_other')?.value.trim() || '',
+      current_state:    document.getElementById('current_state')?.value.trim() || '',
+      success_criteria: document.getElementById('sc')?.value.trim() || '',
+      driver:           document.getElementById('driver')?.value || '',
+      urgency:          document.querySelector('input[name="urgency"]:checked')?.value || '',
+      domain:           document.getElementById('domain').value.trim(),
+      extra_domains:    document.getElementById('extra_domains')?.value.trim() || '',
+      vendors:          document.getElementById('vendors').value,
+      critical_vendors: document.getElementById('critical_vendors')?.value || '',
       preloadVendors,
+      participants,
       caps,
-      te_name:         document.getElementById('te_name')?.value.trim() || '',
-      te_email:        document.getElementById('te_email').value.trim(),
-      mnda:            document.querySelector('input[name="mnda"]:checked')?.value || '',
-      incumbent:       document.querySelector('input[name="incumbent"]:checked')?.value || '',
-      comps:           document.querySelector('input[name="comps"]:checked')?.value || '',
-      rfp:             document.querySelector('input[name="rfp"]:checked')?.value || '',
+      te_name:          document.getElementById('te_name')?.value.trim() || '',
+      te_role:          document.getElementById('te_role')?.value.trim() || '',
+      te_email:         document.getElementById('te_email').value.trim(),
+      dm_same:          document.querySelector('input[name="dm_same"]:checked')?.value || '',
+      dm_name:          document.getElementById('dm_name')?.value.trim() || '',
+      dm_role:          document.getElementById('dm_role')?.value.trim() || '',
+      dm_email:         document.getElementById('dm_email')?.value.trim() || '',
+      mnda:             document.querySelector('input[name="mnda"]:checked')?.value || '',
+      mnda_contact:     document.getElementById('mnda_contact')?.value.trim() || '',
+      incumbent:        document.querySelector('input[name="incumbent"]:checked')?.value || '',
+      incumbent_name:   document.getElementById('incumbent_name')?.value.trim() || '',
+      comps:            document.querySelector('input[name="comps"]:checked')?.value || '',
+      comp_names:       document.getElementById('comp_names')?.value.trim() || '',
+      rfp:              document.querySelector('input[name="rfp"]:checked')?.value || '',
       grc,
-      deadline:        document.getElementById('deadline').value,
+      start_date:       document.getElementById('start_date')?.value.trim() || '',
+      deadline:         document.getElementById('deadline').value.trim(),
+      blackout:         document.getElementById('blackout')?.value.trim() || '',
+      notes:            document.getElementById('notes')?.value.trim() || '',
     };
   }
 
-  let _formData = null;
-
   function submitForm() {
     if (!validate(5)) return;
-    _formData = collectData();
-    const token = generateToken(_formData);
+    const data = collectData();
     document.getElementById('page-5').classList.remove('active');
     document.querySelector('.prog-wrap').style.display = 'none';
     document.getElementById('sn5').classList.remove('active');
     document.getElementById('sn5').classList.add('done');
-    document.getElementById('token-display').textContent = token;
-    document.getElementById('summary-text').value = buildSummary(_formData, token);
+    document.getElementById('summary-text').value = buildSummary(data);
     document.getElementById('success-page').style.display = 'block';
     window.scrollTo({top:0,behavior:'smooth'});
-  }
-
-  function copyToken() {
-    const token = document.getElementById('token-display').textContent;
-    const confirm = document.getElementById('copy-confirm');
-    navigator.clipboard.writeText(token).catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = token; document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
-    });
-    confirm.classList.add('show');
-    setTimeout(() => confirm.classList.remove('show'), 2500);
   }
 
   function copySummary() {
