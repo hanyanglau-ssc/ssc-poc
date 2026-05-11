@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'none'; script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline' 'self'; img-src 'self' data:; font-src 'self';" />
+<meta http-equiv="X-Frame-Options" content="DENY" />
+<meta name="referrer" content="no-referrer" />
 <title>SecurityScorecard — Evaluation Request</title>
+<script src="./docx.min.js" integrity="sha384-v5JwXHXYQQRi5zRcJWDssEQsr2vhTpf4uXXDq+4OV6/mtd8zOakGLqBxLpmumXKr" crossorigin="anonymous"></script>
 <style>
   :root {
     --navy:    #061325;
@@ -152,10 +157,7 @@
 
 <header class="hdr">
   <div class="wordmark">
-    <!-- Replace src with your hosted logo asset, e.g. /assets/ssc-logo-white.svg -->
-    <img src="https://securityscorecard.com/wp-content/themes/ssc/assets/images/ssc-logo-white.svg"
-         alt="SecurityScorecard" height="26"
-         onerror="this.replaceWith(document.createTextNode('SecurityScorecard'))" />
+    <img src="./ssc-logo.png" alt="SecurityScorecard" height="26" />
   </div>
   <div class="hdr-div"></div>
   <span class="hdr-sub">Platform Evaluation Request</span>
@@ -263,7 +265,7 @@
 
       <div class="fg">
         <label for="domain">Primary domain <span class="req">*</span><span class="hint">— e.g. acme.com</span></label>
-        <input type="text" id="domain" placeholder="yourdomain.com" required />
+        <input type="text" id="domain" placeholder="yourdomain.com" maxlength="253" required />
       </div>
       <div class="fg">
         <label for="extra_domains">Additional own-organisation domains <span class="hint">— one per line (subsidiaries, business units, regional brands, benchmarking)</span></label>
@@ -334,11 +336,11 @@
         <div class="fr">
           <div>
             <label>Full Name <span class="req">*</span></label>
-            <input type="text" id="te_name" placeholder="Jane Smith" required />
+            <input type="text" id="te_name" placeholder="Jane Smith" maxlength="200" required />
           </div>
           <div>
             <label>Title / Role</label>
-            <input type="text" id="te_role" placeholder="e.g. Security Architect" />
+            <input type="text" id="te_role" placeholder="e.g. Security Architect" maxlength="100" />
           </div>
         </div>
         <div class="fg">
@@ -357,8 +359,8 @@
         </div>
         <div id="dm_fields">
           <div class="fr">
-            <div><label>Full Name</label><input type="text" id="dm_name" placeholder="Alex Johnson" /></div>
-            <div><label>Title / Role</label><input type="text" id="dm_role" placeholder="e.g. CISO, VP Risk" /></div>
+            <div><label>Full Name</label><input type="text" id="dm_name" placeholder="Alex Johnson" maxlength="200" /></div>
+            <div><label>Title / Role</label><input type="text" id="dm_role" placeholder="e.g. CISO, VP Risk" maxlength="100" /></div>
           </div>
           <div class="fg">
             <label>Work Email</label>
@@ -390,7 +392,7 @@
             ⚠ Platform access will not be provisioned until the MNDA is countersigned. Please provide the contact who should receive the MNDA.
           </div>
           <label>Name and email for MNDA recipient</label>
-          <input type="text" id="mnda_contact" placeholder="Legal Counsel name — counsel@yourcompany.com" />
+          <input type="text" id="mnda_contact" placeholder="Legal Counsel name — counsel@yourcompany.com" maxlength="300" />
         </div>
       </div>
 
@@ -416,7 +418,7 @@
         </div>
         <div class="reveal" id="incumbent_reveal">
           <label>Which platform(s) are you currently using?</label>
-          <input type="text" id="incumbent_name" placeholder="e.g. BitSight, RiskRecon, Panorays…" />
+          <input type="text" id="incumbent_name" placeholder="e.g. BitSight, RiskRecon, Panorays…" maxlength="300" />
         </div>
       </div>
 
@@ -429,7 +431,7 @@
         </div>
         <div class="reveal" id="comps_reveal">
           <label>Which vendors are you also evaluating? <span class="hint">— optional</span></label>
-          <input type="text" id="comp_names" placeholder="e.g. BitSight, Panorays…" />
+          <input type="text" id="comp_names" placeholder="e.g. BitSight, Panorays…" maxlength="300" />
         </div>
       </div>
 
@@ -470,7 +472,7 @@
 
       <div class="fg">
         <label for="blackout">Dates when your team is unavailable <span class="hint">— optional</span></label>
-        <input type="text" id="blackout" placeholder="e.g. Unavailable 2–9 June (public holiday / internal freeze)" />
+        <input type="text" id="blackout" placeholder="e.g. Unavailable 2–9 June (public holiday / internal freeze)" maxlength="300" />
       </div>
 
       <div class="fg">
@@ -484,7 +486,7 @@
 
       <div class="fg">
         <label for="notes">Anything else we should know before designing your evaluation? <span class="hint">— optional</span></label>
-        <textarea id="notes" rows="3" placeholder="Any regulatory constraints, internal approvals required, or specific scenarios you want tested…"></textarea>
+        <textarea id="notes" rows="3" maxlength="2000" placeholder="Any regulatory constraints, internal approvals required, or specific scenarios you want tested…"></textarea>
       </div>
     </div>
     <div class="btn-row">
@@ -517,7 +519,7 @@
 </div><!-- end .fw -->
 
 <footer class="ftr">
-  &copy; 2026 SecurityScorecard Inc. &nbsp;·&nbsp; Information submitted is handled in accordance with our Privacy Policy.
+  &copy; 2026 SecurityScorecard Inc. &nbsp;·&nbsp; Information submitted is handled in accordance with our <a href="https://securityscorecard.com/privacy-policy/" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">Privacy Policy</a>.
 </footer>
 
 <script>
@@ -672,20 +674,35 @@
   // ─────────────────────────────────────────────────────────────────
   function addParticipant() {
     pCount++;
-    const id = 'ep-' + pCount;
+    const n = pCount;
+    const id = 'ep-' + n;
     const div = document.createElement('div');
     div.className = 'sh-block'; div.id = id;
-    div.innerHTML = `
-      <div class="sh-head">
-        <div class="sh-label">Additional Participant ${pCount}</div>
-        <button type="button" class="btn-remove" onclick="removeParticipant('${id}')">Remove</button>
-      </div>
-      <div class="fr">
-        <div><label>Full Name</label><input type="text" id="p${pCount}_name" placeholder="Full name"/></div>
-        <div><label>Title / Role</label><input type="text" id="p${pCount}_role" placeholder="e.g. Risk Analyst"/></div>
-      </div>
-      <div class="fg"><label>Work Email</label><input type="email" id="p${pCount}_email" placeholder="name@yourcompany.com"/></div>
-    `;
+
+    const head = document.createElement('div'); head.className = 'sh-head';
+    const lbl  = document.createElement('div'); lbl.className  = 'sh-label';
+    lbl.textContent = 'Additional Participant ' + n;
+    const rmBtn = document.createElement('button');
+    rmBtn.type = 'button'; rmBtn.className = 'btn-remove';
+    rmBtn.textContent = 'Remove';
+    rmBtn.addEventListener('click', () => removeParticipant(id));
+    head.appendChild(lbl); head.appendChild(rmBtn);
+
+    const row = document.createElement('div'); row.className = 'fr';
+    [['Full Name', 'text', 'Full name', 200], ['Title / Role', 'text', 'e.g. Risk Analyst', 100]].forEach(([labelText, type, ph, max]) => {
+      const cell = document.createElement('div');
+      const l = document.createElement('label'); l.textContent = labelText;
+      const inp = document.createElement('input'); inp.type = type; inp.placeholder = ph; inp.maxLength = max;
+      cell.appendChild(l); cell.appendChild(inp); row.appendChild(cell);
+    });
+
+    const emailWrap = document.createElement('div'); emailWrap.className = 'fg';
+    const emailLbl  = document.createElement('label'); emailLbl.textContent = 'Work Email';
+    const emailInp  = document.createElement('input');
+    emailInp.type = 'email'; emailInp.placeholder = 'name@yourcompany.com'; emailInp.maxLength = 254;
+    emailWrap.appendChild(emailLbl); emailWrap.appendChild(emailInp);
+
+    div.appendChild(head); div.appendChild(row); div.appendChild(emailWrap);
     document.getElementById('extra-participants').appendChild(div);
   }
   function removeParticipant(id) {
@@ -701,34 +718,54 @@
   function addVendorRow() {
     pvCount++;
     const id = 'pv-' + pvCount;
+
     const div = document.createElement('div');
     div.className = 'sh-block'; div.id = id;
-    div.innerHTML = `
-      <div class="sh-head">
-        <div class="sh-label">Vendor ${pvCount}</div>
-        <button type="button" class="btn-remove" onclick="removeVendorRow('${id}')">Remove</button>
-      </div>
-      <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px">
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Company name</label>
-          <input type="text" class="pv-name" placeholder="e.g. Tech Mahindra" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit"/>
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Domain</label>
-          <input type="text" class="pv-domain" placeholder="techmahindra.com" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit"/>
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Tier</label>
-          <select class="pv-tier" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff">
-            <option value="">—</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low / Other</option>
-          </select>
-        </div>
-      </div>
-    `;
+
+    // Header row
+    const head = document.createElement('div'); head.className = 'sh-head';
+    const lbl  = document.createElement('div'); lbl.className  = 'sh-label';
+    lbl.textContent = 'Vendor ' + pvCount;
+    const rmBtn = document.createElement('button');
+    rmBtn.type = 'button'; rmBtn.className = 'btn-remove';
+    rmBtn.textContent = 'Remove';
+    rmBtn.addEventListener('click', () => removeVendorRow(id));
+    head.appendChild(lbl); head.appendChild(rmBtn);
+
+    // 3-column grid
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px';
+
+    const inputStyle = 'width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit';
+    const lblStyle   = 'font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px';
+
+    // Company name cell
+    const cellName = document.createElement('div');
+    const lblName  = document.createElement('label'); lblName.style.cssText = lblStyle; lblName.textContent = 'Company name';
+    const inpName  = document.createElement('input'); inpName.type = 'text'; inpName.className = 'pv-name';
+    inpName.placeholder = 'e.g. Tech Mahindra'; inpName.maxLength = 200; inpName.style.cssText = inputStyle;
+    cellName.appendChild(lblName); cellName.appendChild(inpName);
+
+    // Domain cell
+    const cellDom = document.createElement('div');
+    const lblDom  = document.createElement('label'); lblDom.style.cssText = lblStyle; lblDom.textContent = 'Domain';
+    const inpDom  = document.createElement('input'); inpDom.type = 'text'; inpDom.className = 'pv-domain';
+    inpDom.placeholder = 'techmahindra.com'; inpDom.maxLength = 253; inpDom.style.cssText = inputStyle;
+    cellDom.appendChild(lblDom); cellDom.appendChild(inpDom);
+
+    // Tier cell
+    const cellTier = document.createElement('div');
+    const lblTier  = document.createElement('label'); lblTier.style.cssText = lblStyle; lblTier.textContent = 'Tier';
+    const sel = document.createElement('select'); sel.className = 'pv-tier';
+    sel.style.cssText = inputStyle + ';background:#fff';
+    [['', '—'], ['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low / Other']].forEach(([val, txt]) => {
+      const opt = document.createElement('option'); opt.value = val; opt.textContent = txt;
+      sel.appendChild(opt);
+    });
+    cellTier.appendChild(lblTier); cellTier.appendChild(sel);
+
+    grid.appendChild(cellName); grid.appendChild(cellDom); grid.appendChild(cellTier);
+    div.appendChild(head); div.appendChild(grid);
     document.getElementById('preload-wrap').appendChild(div);
   }
 
@@ -933,13 +970,12 @@
   function copySummary() {
     const text = document.getElementById('summary-text').value;
     const confirm = document.getElementById('summary-confirm');
-    navigator.clipboard.writeText(text).catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = text; document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
+    navigator.clipboard.writeText(text).then(() => {
+      confirm.classList.add('show');
+      setTimeout(() => confirm.classList.remove('show'), 2500);
+    }).catch(() => {
+      // Clipboard write failed — user can manually select and copy the text area
     });
-    confirm.classList.add('show');
-    setTimeout(() => confirm.classList.remove('show'), 2500);
   }
 
   async function downloadBlankForm() {
@@ -949,8 +985,7 @@
     btn.textContent = 'Building…';
     try {
       const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-              WidthType, ShadingType, BorderStyle, AlignmentType } =
-            await import('https://esm.sh/docx@8.5.0');
+              WidthType, ShadingType, BorderStyle, AlignmentType } = window.docx;
 
       // ── Style constants ──────────────────────────────────────────────
       const NAVY   = '061325';
